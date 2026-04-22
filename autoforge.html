@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AutoForge — Universal Code Automation Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0f;--bg2:#0f0f1a;--bg3:#141422;
+  --surface:#1a1a2e;--surface2:#1f1f35;
+  --border:#2a2a45;
+  --accent:#6c63ff;--accent2:#ff6584;--accent3:#43e97b;--accent4:#f093fb;
+  --text:#e8e8f0;--text2:#9090b0;--text3:#606080;
+  --font-head:'Syne',sans-serif;--font-mono:'Space Mono',monospace;
+  --radius:12px;--radius-lg:18px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+::selection{background:rgba(108,99,255,.3);color:#fff}
+
+/* Animations */
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 20px rgba(108,99,255,.3)}50%{box-shadow:0 0 40px rgba(108,99,255,.7),0 0 80px rgba(108,99,255,.2)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes scanMove{from{transform:translateX(-100%)}to{transform:translateX(200%)}}
+
+.fade-up{animation:fadeUp .45s ease forwards}
+
+/* ===== LAYOUT ===== */
+.app{min-height:100vh;display:flex;flex-direction:column;position:relative}
+
+/* BG */
+.bg-layer{position:fixed;inset:0;pointer-events:none;z-index:0}
+.bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(108,99,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(108,99,255,.04) 1px,transparent 1px);background-size:44px 44px}
+.bg-glow{position:absolute;border-radius:50%;filter:blur(130px);opacity:.12}
+.bg-g1{width:700px;height:700px;background:radial-gradient(circle,#6c63ff,transparent);top:-250px;left:-250px}
+.bg-g2{width:500px;height:500px;background:radial-gradient(circle,#ff6584,transparent);bottom:5%;right:-150px}
+.bg-g3{width:350px;height:350px;background:radial-gradient(circle,#43e97b,transparent);top:45%;left:45%}
+
+/* ===== HEADER ===== */
+header{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:1.1rem 2rem;border-bottom:1px solid var(--border);background:rgba(10,10,15,.85);backdrop-filter:blur(20px)}
+.logo{display:flex;align-items:center;gap:.7rem;cursor:pointer;text-decoration:none}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent4));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;animation:glowPulse 3s ease-in-out infinite;flex-shrink:0}
+.logo-name{font-family:var(--font-head);font-size:1.35rem;font-weight:800;background:linear-gradient(135deg,#fff,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo-ver{font-size:.6rem;color:var(--text3);background:var(--surface);padding:2px 6px;border-radius:4px;border:1px solid var(--border);letter-spacing:.1em}
+.header-right{display:flex;align-items:center;gap:.75rem}
+.nav-btn{font-family:var(--font-mono);font-size:.72rem;color:var(--text2);background:transparent;border:1px solid var(--border);padding:.35rem .8rem;border-radius:6px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center}
+.nav-btn:hover{color:var(--text);border-color:var(--accent);background:var(--surface)}
+.btn-danger{color:var(--accent2);border-color:rgba(255,101,132,.3);background:rgba(255,101,132,.07)}
+.btn-danger:hover{background:rgba(255,101,132,.15);border-color:var(--accent2)}
+.live-dot{display:flex;align-items:center;gap:.35rem;font-size:.68rem;color:var(--accent3)}
+.dot{width:6px;height:6px;background:var(--accent3);border-radius:50%;animation:pulse 2s infinite}
+
+/* ===== MAIN ===== */
+main{position:relative;z-index:1;flex:1;padding:1.75rem 2rem;max-width:1380px;width:100%;margin:0 auto}
+
+/* ===== STEP INDICATOR ===== */
+.steps{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:2rem}
+.s-item{display:flex;align-items:center;gap:.45rem}
+.s-num{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;border:2px solid var(--border);color:var(--text3);background:var(--bg2);transition:all .3s;flex-shrink:0}
+.s-num.active{border-color:var(--accent);color:#fff;background:var(--accent);box-shadow:0 0 18px rgba(108,99,255,.5)}
+.s-num.done{border-color:var(--accent3);color:var(--accent3);background:rgba(67,233,123,.1)}
+.s-label{font-size:.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;transition:color .3s}
+.s-item.active .s-label{color:var(--accent)}
+.s-item.done .s-label{color:var(--text2)}
+.s-line{width:55px;height:1px;background:var(--border);margin:0 .4rem;transition:background .3s}
+.s-line.done{background:var(--accent3)}
+
+/* ===== ERROR ===== */
+.error-bar{display:flex;align-items:center;gap:.7rem;background:rgba(255,101,132,.09);border:1px solid rgba(255,101,132,.3);color:var(--accent2);padding:.65rem 1.1rem;border-radius:var(--radius);margin-bottom:1.25rem;font-size:.82rem}
+.error-x{margin-left:auto;background:none;border:none;color:var(--accent2);cursor:pointer;font-size:1.2rem;line-height:1;padding:0}
+
+/* ===== CARDS & SURFACES ===== */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.6rem;transition:border-color .2s,box-shadow .2s}
+.card:hover{border-color:rgba(108,99,255,.25);box-shadow:0 4px 24px rgba(108,99,255,.1)}
+.section-label{font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.2rem}
+.card-title{font-family:var(--font-head);font-size:1.05rem;font-weight:700;margin-bottom:.35rem}
+.card-sub{font-size:.78rem;color:var(--text2);margin-bottom:1.1rem;line-height:1.55}
+label.field-label{display:block;font-size:.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.45rem}
+textarea,select{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:.82rem;padding:.8rem .95rem;resize:vertical;transition:border-color .2s,box-shadow .2s;outline:none;margin-bottom:.9rem}
+textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,99,255,.13)}
+textarea{line-height:1.6}
+select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 11 11'%3E%3Cpath fill='%239090b0' d='M5.5 7L1 3h9z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .95rem center;padding-right:2.2rem;resize:none}
+.code-ta{font-family:var(--font-mono)!important;font-size:.78rem!important;background:#050512!important;border-color:rgba(108,99,255,.18)!important;color:#9ab!important;min-height:180px}
+
+/* ===== BUTTONS ===== */
+.btn{display:inline-flex;align-items:center;gap:.55rem;font-family:var(--font-mono);font-size:.82rem;font-weight:700;padding:.8rem 1.5rem;border-radius:var(--radius);cursor:pointer;transition:all .2s;border:none;white-space:nowrap}
+.btn-primary{color:#fff;background:linear-gradient(135deg,var(--accent),#8b5cf6);position:relative;overflow:hidden}
+.btn-primary::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.12),transparent);opacity:0;transition:opacity .2s}
+.btn-primary:hover::after{opacity:1}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(108,99,255,.4)}
+.btn-primary:active{transform:none}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+.btn-secondary{color:var(--text2);background:var(--surface);border:1px solid var(--border)}
+.btn-secondary:hover{color:var(--text);border-color:var(--accent);background:var(--surface2)}
+.btn-green{background:linear-gradient(135deg,#43e97b,#38f9d7)!important;color:#060a0a!important}
+.btn-green:hover{box-shadow:0 8px 24px rgba(67,233,123,.4)!important}
+.btn-full{width:100%;justify-content:center}
+.spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .75s linear infinite;flex-shrink:0}
+.spinner-dark{border:2px solid rgba(0,0,0,.2);border-top-color:#050a0a}
+.action-row{display:flex;align-items:center;gap:.85rem;flex-wrap:wrap;padding-top:1rem}
+
+/* ===== INPUT STEP ===== */
+.input-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.75rem;align-items:start}
+.input-left,.input-right{display:flex;flex-direction:column;gap:1.25rem}
+.examples{display:flex;flex-direction:column;gap:.5rem}
+.ex-chip{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem .9rem;cursor:pointer;font-size:.78rem;color:var(--text2);transition:all .2s;display:flex;align-items:center;gap:.55rem;text-align:left;font-family:var(--font-mono);width:100%}
+.ex-chip:hover{border-color:var(--accent);color:var(--text);background:var(--surface)}
+.ex-chip:disabled{opacity:.5;cursor:not-allowed}
+.chips-row{display:flex;flex-wrap:wrap;gap:.4rem}
+.chip{font-size:.68rem;background:var(--surface);border:1px solid var(--border);padding:2px 9px;border-radius:20px;color:var(--text2)}
+.tips{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.tips li{display:flex;align-items:flex-start;gap:.45rem;font-size:.78rem;color:var(--text2);line-height:1.5}
+.tip-arr{color:var(--accent3);flex-shrink:0}
+.char-count{text-align:right;font-size:.65rem;margin-top:-0.65rem;margin-bottom:.5rem}
+
+/* ===== ANALYSIS STEP ===== */
+.analysis-header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.25rem}
+.big-title{font-family:var(--font-head);font-size:1.55rem;font-weight:800}
+.confidence-badge{display:flex;align-items:center;gap:.4rem;background:rgba(67,233,123,.1);border:1px solid rgba(67,233,123,.3);color:var(--accent3);padding:.35rem .85rem;border-radius:20px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em}
+.summary-box{background:linear-gradient(135deg,rgba(108,99,255,.09),rgba(240,147,251,.07));border:1px solid rgba(108,99,255,.25);border-radius:var(--radius);padding:1.1rem 1.25rem;font-size:.85rem;color:var(--text2);line-height:1.7;margin-bottom:1.25rem}
+.summary-box strong{color:var(--accent);font-family:var(--font-head)}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem;margin-bottom:1.25rem}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center}
+.stat-val{font-family:var(--font-head);font-size:1.9rem;font-weight:800;color:var(--accent);line-height:1}
+.stat-lbl{font-size:.67rem;color:var(--text3);margin-top:.2rem;text-transform:uppercase;letter-spacing:.1em}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
+.entity-block{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:.9rem;margin-bottom:.6rem}
+.ent-name{font-weight:700;color:var(--accent4);font-size:.87rem;margin-bottom:.4rem;display:flex;align-items:center;gap:.45rem}
+.ent-badge{font-size:.6rem;background:rgba(240,147,251,.12);color:var(--accent4);padding:1px 6px;border-radius:4px;border:1px solid rgba(240,147,251,.25)}
+.fields-wrap{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.4rem}
+.ftag{font-size:.66rem;background:var(--surface);border:1px solid var(--border);color:var(--text2);padding:1px 7px;border-radius:4px}
+.ftag.req{border-color:rgba(108,99,255,.4);color:var(--accent)}
+.api-row{display:flex;align-items:center;gap:.65rem;padding:.52rem 0;border-bottom:1px solid var(--border);font-size:.8rem}
+.api-row:last-child{border-bottom:none}
+.meth{font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:4px;min-width:50px;text-align:center;flex-shrink:0}
+.GET{background:rgba(56,189,248,.13);color:#38bdf8;border:1px solid rgba(56,189,248,.28)}
+.POST{background:rgba(67,233,123,.13);color:#43e97b;border:1px solid rgba(67,233,123,.28)}
+.PUT{background:rgba(251,191,36,.13);color:#fbbf24;border:1px solid rgba(251,191,36,.28)}
+.DELETE{background:rgba(255,101,132,.13);color:#ff6584;border:1px solid rgba(255,101,132,.28)}
+.api-ep{font-family:var(--font-mono);font-size:.77rem;color:var(--text)}
+.api-d{color:var(--text3);font-size:.72rem;margin-left:auto}
+.meta-row{display:flex;gap:2rem;flex-wrap:wrap;padding:.1rem 0}
+.meta-item .section-label{margin-bottom:.15rem}
+.meta-val{font-weight:700;font-size:.88rem}
+
+/* ===== GENERATED STEP ===== */
+.gen-hero{text-align:center;padding:1.5rem 0 .75rem}
+.success-emoji{font-size:2.8rem;display:block;animation:float 3s ease-in-out infinite;margin-bottom:.7rem}
+.gen-title{font-family:var(--font-head);font-size:1.75rem;font-weight:800;background:linear-gradient(135deg,var(--accent3),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.gen-sub{color:var(--text2);font-size:.85rem;margin-top:.35rem}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem;margin:1.25rem 0}
+.met{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;text-align:center;transition:all .2s;cursor:default}
+.met:hover{border-color:var(--accent);transform:translateY(-2px)}
+.met-icon{font-size:1.35rem;margin-bottom:.35rem}
+.met-val{font-family:var(--font-head);font-size:1.65rem;font-weight:800;color:var(--accent);line-height:1}
+.met-lbl{font-size:.66rem;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:.2rem}
+.tab-bar{display:flex;background:var(--bg2);border-radius:var(--radius) var(--radius) 0 0;overflow:hidden;border:1px solid var(--border);border-bottom:none}
+.tab{font-family:var(--font-mono);font-size:.72rem;padding:.55rem 1.1rem;border:none;background:transparent;color:var(--text3);cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(108,99,255,.06)}
+.tab:hover:not(.active){color:var(--text2);background:var(--surface)}
+.tab-copy{margin-left:auto;color:var(--text3)}
+.tab-copy:hover{color:var(--accent3)}
+.code-view{background:#050512;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:1.1rem;font-family:var(--font-mono);font-size:.77rem;color:#8ab;line-height:1.72;max-height:340px;overflow-y:auto;overflow-x:auto;white-space:pre;tab-size:2}
+.setup-steps{display:flex;flex-direction:column;gap:.6rem}
+.setup-step{display:flex;align-items:flex-start;gap:.85rem;padding:.65rem .85rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);font-size:.82rem;color:var(--text2)}
+.s-circle{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0}
+.note-box{margin-top:.85rem;padding:.75rem 1rem;background:var(--bg2);border-radius:var(--radius);font-size:.8rem;color:var(--text2);border-left:3px solid var(--accent);line-height:1.6}
+.note-box strong{color:var(--accent)}
+
+/* ===== EXECUTION STEP ===== */
+.exec-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.exec-toolbar{display:flex;align-items:center;gap:.65rem;margin-bottom:.65rem;flex-wrap:wrap}
+.lang-sel{width:auto!important;font-size:.72rem!important;padding:.38rem 2rem .38rem .7rem!important;margin-bottom:0!important}
+.output{background:#050512;border:1px solid var(--border);border-radius:var(--radius);padding:.95rem;font-family:var(--font-mono);font-size:.77rem;line-height:1.72;min-height:260px;max-height:380px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;color:#8ab;transition:color .3s}
+.output.ok{color:var(--accent3)}
+.output.err{color:var(--accent2)}
+.output.wait{color:var(--text3);font-style:italic}
+.exec-status-badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.7rem;padding:.3rem .75rem;border-radius:20px;border:1px solid var(--border);color:var(--text3)}
+.exec-status-badge.ok{color:var(--accent3);border-color:rgba(67,233,123,.3);background:rgba(67,233,123,.07)}
+.exec-status-badge.err{color:var(--accent2);border-color:rgba(255,101,132,.3);background:rgba(255,101,132,.07)}
+.exec-status-badge.run{color:var(--accent);border-color:rgba(108,99,255,.3);background:rgba(108,99,255,.07)}
+.hist-item{display:flex;align-items:center;gap:.55rem;font-size:.72rem;color:var(--text3);padding:.2rem 0}
+.hist-ok{color:var(--accent3)}
+.hist-err{color:var(--accent2)}
+.snip-row{display:flex;gap:.4rem;flex-wrap:wrap}
+.snip-btn{font-family:var(--font-mono);font-size:.7rem;background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:.3rem .75rem;border-radius:20px;cursor:pointer;transition:all .2s}
+.snip-btn:hover{border-color:var(--accent);color:var(--text);background:var(--surface)}
+
+/* ===== FOOTER ===== */
+footer{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:.65rem;padding:1.1rem;border-top:1px solid var(--border);font-size:.7rem;color:var(--text3)}
+.f-dot{color:var(--accent)}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:900px){
+  .input-grid,.two-col,.exec-grid{grid-template-columns:1fr}
+  .stat-row,.metrics{grid-template-columns:1fr 1fr}
+  main{padding:1.25rem}
+  header{padding:1rem 1.25rem}
+}
+@media(max-width:600px){
+  .stat-row,.metrics{grid-template-columns:1fr}
+  .logo-ver{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- BG -->
+<div class="bg-layer">
+  <div class="bg-grid"></div>
+  <div class="bg-glow bg-g1"></div>
+  <div class="bg-glow bg-g2"></div>
+  <div class="bg-glow bg-g3"></div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <a class="logo" onclick="resetApp()" href="#">
+    <div class="logo-icon">⚡</div>
+    <span class="logo-name">AutoForge</span>
+    <span class="logo-ver">v1.0</span>
+  </a>
+  <div class="header-right">
+    <a href="http://localhost:8000/docs" target="_blank" class="nav-btn">API Docs ↗</a>
+    <a href="https://console.anthropic.com" target="_blank" class="nav-btn">Get API Key ↗</a>
+    <button class="nav-btn btn-danger" onclick="resetApp()" id="resetBtn" style="display:none">↺ New Project</button>
+    <div class="live-dot"><div class="dot"></div> LIVE</div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main>
+  <!-- Step Indicator -->
+  <div class="steps" id="stepIndicator">
+    <div class="s-item active" id="si-input"><div class="s-num active" id="sn-input">1</div><span class="s-label">Input</span></div>
+    <div class="s-line" id="sl-1"></div>
+    <div class="s-item" id="si-analysis"><div class="s-num" id="sn-analysis">2</div><span class="s-label">Analysis</span></div>
+    <div class="s-line" id="sl-2"></div>
+    <div class="s-item" id="si-generated"><div class="s-num" id="sn-generated">3</div><span class="s-label">Generate</span></div>
+    <div class="s-line" id="sl-3"></div>
+    <div class="s-item" id="si-execution"><div class="s-num" id="sn-execution">4</div><span class="s-label">Execute</span></div>
+  </div>
+
+  <!-- Error bar -->
+  <div class="error-bar" id="errorBar" style="display:none">
+    <span>⚠</span><span id="errorMsg"></span>
+    <button class="error-x" onclick="hideError()">×</button>
+  </div>
+
+  <!-- Step containers -->
+  <div id="stepInput" class="fade-up">
+    <div class="input-grid">
+      <div class="input-left">
+        <div class="card">
+          <p class="section-label">Step 1 — Describe</p>
+          <h2 class="card-title">What do you want to automate?</h2>
+          <p class="card-sub">Describe your requirements in plain English. Include fields, relationships, APIs needed, and any existing code you have.</p>
+
+          <label class="field-label">Requirement / Description *</label>
+          <textarea id="reqText" rows="8" placeholder="E.g. Create a user management system with name, email, phone fields. Auto-fill the users table from database, generate CRUD APIs, validate email format..."></textarea>
+          <div class="char-count" id="charCount" style="color:var(--text3)">0 chars</div>
+
+          <label class="field-label">Language</label>
+          <select id="langSelect">
+            <option value="python">Python</option>
+            <option value="javascript">JavaScript / Node.js</option>
+            <option value="sql">SQL</option>
+            <option value="bash">Bash / Shell</option>
+          </select>
+
+          <label class="field-label">Existing Code (optional)</label>
+          <textarea id="codeText" rows="6" class="code-ta" placeholder="# Paste any existing code here (optional)&#10;def validate_email(email):&#10;    import re&#10;    return bool(re.match(r'[^@]+@[^@]+\.[^@]+', email))"></textarea>
+
+          <button class="btn btn-primary btn-full" id="analyzeBtn" onclick="analyze()" disabled>
+            ⚡ Analyze & Generate Plan
+          </button>
+        </div>
+      </div>
+
+      <div class="input-right">
+        <div class="card">
+          <p class="section-label">Quick Start</p>
+          <h3 class="card-title" style="font-size:.93rem">Try an Example</h3>
+          <p class="card-sub">Click any example to pre-fill the form instantly.</p>
+          <div class="examples" id="examplesList"></div>
+        </div>
+        <div class="card">
+          <p class="section-label">How It Works</p>
+          <ul class="tips">
+            <li><span class="tip-arr">→</span>Claude AI reads your requirement and builds a full automation plan</li>
+            <li><span class="tip-arr">→</span>Database schema and tables are created automatically</li>
+            <li><span class="tip-arr">→</span>REST CRUD APIs are generated with all endpoints</li>
+            <li><span class="tip-arr">→</span>Code runs securely in an isolated sandbox</li>
+            <li><span class="tip-arr">→</span>Everything is production-ready and downloadable</li>
+          </ul>
+        </div>
+        <div class="card" style="background:linear-gradient(135deg,rgba(108,99,255,.09),rgba(240,147,251,.05));border-color:rgba(108,99,255,.28)">
+          <p class="section-label">Powered By</p>
+          <div class="chips-row" style="margin-top:.5rem">
+            <span class="chip">Claude AI</span><span class="chip">FastAPI</span><span class="chip">PostgreSQL</span><span class="chip">Docker</span><span class="chip">React</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="stepAnalysis" style="display:none"></div>
+  <div id="stepGenerated" style="display:none"></div>
+  <div id="stepExecution" style="display:none"></div>
+</main>
+
+<footer>
+  <span>AutoForge v1.0 — Powered by Claude AI</span>
+  <span class="f-dot">◆</span>
+  <span>Universal Code Automation Platform</span>
+</footer>
+</div>
+
+<script>
+// ==================== STATE ====================
+const state = {
+  step: 'input',
+  automationId: null,
+  analysisData: null,
+  generatedData: null,
+  execHistory: []
+};
+
+const API = 'http://localhost:8000/api/v1';
+
+const EXAMPLES = [
+  { icon:'👤', label:'User Management System', text:'Create a complete user management system with name, email, phone, address, and role fields. Support user roles (admin, user, guest). Generate CRUD APIs, auto-fill users table from database, validate email and phone formats.' },
+  { icon:'🛒', label:'E-Commerce Product Catalog', text:'Build a product catalog with products, categories, inventory tracking. Include price, stock quantity, SKU, and description fields. Auto-generate search and filter APIs, track low-stock alerts, auto-fill product tables.' },
+  { icon:'📊', label:'Sales Analytics Dashboard', text:'Create a sales tracking system with orders, customers, and products. Track revenue, generate monthly reports, and auto-fill sales tables from transaction database. Support date range filtering.' },
+  { icon:'📋', label:'Task Management App', text:'Build a task management system with projects, tasks, users, and comments. Support priority levels (low/medium/high), due dates, status tracking. Generate REST APIs and auto-fill task boards from database.' },
+  { icon:'🏥', label:'Patient Records System', text:'Create a medical records system with patient info, appointments, diagnoses, and prescriptions. Ensure structured field design, generate audit APIs, and auto-fill patient history from database.' }
+];
+
+const CODE_EXAMPLES = {
+  python:`# Test automation logic
+import json
+from datetime import datetime
+
+data = {
+    "user": "AutoForge",
+    "timestamp": datetime.now().isoformat(),
+    "status": "running",
+    "tasks": ["schema created", "apis generated", "tests passed"]
+}
+
+print("✅ Automation Test Result:")
+print(json.dumps(data, indent=2))
+print(f"\\n🕐 Executed at: {datetime.now().strftime('%H:%M:%S')}")`,
+  javascript:`// Test automation in JavaScript
+const data = {
+  platform: "AutoForge",
+  timestamp: new Date().toISOString(),
+  apis: ["GET /api/users","POST /api/users","PUT /api/users/:id","DELETE /api/users/:id"],
+  status: "operational"
+};
+console.log("⚡ Automation Test:");
+console.log(JSON.stringify(data, null, 2));
+console.log("\\n✅ All systems operational!");`,
+  sql:`-- Test SQL automation
+SELECT 
+  'AutoForge' AS platform,
+  NOW() AS timestamp,
+  'Schema Ready' AS status,
+  5 AS tables_created,
+  20 AS apis_generated;`,
+  bash:`echo "🚀 AutoForge Automation Check"
+echo "================================"
+echo "Platform: Universal Code Automation"
+echo "Status: Running"
+date
+echo "================================"
+echo "✅ Sandbox execution working!"`
+};
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', () => {
+  // Populate examples
+  const el = document.getElementById('examplesList');
+  EXAMPLES.forEach(ex => {
+    const btn = document.createElement('button');
+    btn.className = 'ex-chip';
+    btn.innerHTML = `<span>${ex.icon}</span><span>${ex.label}</span>`;
+    btn.onclick = () => { document.getElementById('reqText').value = ex.text; updateCharCount(); };
+    el.appendChild(btn);
+  });
+
+  // Char counter + enable button
+  const req = document.getElementById('reqText');
+  req.addEventListener('input', updateCharCount);
+  updateCharCount();
+});
+
+function updateCharCount() {
+  const v = document.getElementById('reqText').value;
+  const el = document.getElementById('charCount');
+  el.textContent = v.length + ' chars';
+  el.style.color = v.length >= 10 ? 'var(--accent3)' : 'var(--text3)';
+  document.getElementById('analyzeBtn').disabled = v.trim().length < 10;
+}
+
+// ==================== NAVIGATION ====================
+function setStep(s) {
+  state.step = s;
+  const steps = ['input','analysis','generated','execution'];
+  const idx = steps.indexOf(s);
+
+  steps.forEach((st, i) => {
+    const sItem = document.getElementById('si-' + st);
+    const sNum = document.getElementById('sn-' + st);
+    sItem.className = 's-item' + (i === idx ? ' active' : i < idx ? ' done' : '');
+    sNum.className = 's-num' + (i === idx ? ' active' : i < idx ? ' done' : '');
+    sNum.textContent = i < idx ? '✓' : i + 1;
+    const line = document.getElementById('sl-' + (i+1));
+    if (line) line.className = 's-line' + (i < idx ? ' done' : '');
+  });
+
+  steps.forEach(st => {
+    const el = document.getElementById('step' + st.charAt(0).toUpperCase() + st.slice(1));
+    if (el) el.style.display = st === s ? 'block' : 'none';
+  });
+
+  document.getElementById('resetBtn').style.display = s !== 'input' ? '' : 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetApp() {
+  state.step = 'input'; state.automationId = null;
+  state.analysisData = null; state.generatedData = null;
+  hideError();
+  setStep('input');
+}
+
+// ==================== ERROR ====================
+function showError(msg) {
+  document.getElementById('errorMsg').textContent = msg;
+  document.getElementById('errorBar').style.display = 'flex';
+}
+function hideError() {
+  document.getElementById('errorBar').style.display = 'none';
+}
+
+// ==================== ANALYZE ====================
+async function analyze() {
+  const req = document.getElementById('reqText').value.trim();
+  const code = document.getElementById('codeText').value.trim();
+  const lang = document.getElementById('langSelect').value;
+  if (req.length < 10) return;
+
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Analyzing with Claude AI...';
+  hideError();
+
+  try {
+    const res = await fetch(API + '/automation/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requirement: req, code: code || null, language: lang })
+    });
+    if (!res.ok) {
+      const e = await res.json();
+      throw new Error(e.detail || 'Analysis failed');
+    }
+    const data = await res.json();
+    state.automationId = data.automation_id;
+    state.analysisData = data;
+    renderAnalysis(data);
+    setStep('analysis');
+  } catch(e) {
+    showError(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '⚡ Analyze & Generate Plan';
+    updateCharCount();
+  }
+}
+
+// ==================== RENDER ANALYSIS ====================
+function renderAnalysis(data) {
+  const { analysis, generated_apis = [] } = data;
+  const entities = analysis?.entities || [];
+  const tables = entities.filter(e => e.type === 'table');
+  const confidence = Math.round((analysis?.confidence || 0.9) * 100);
+  const totalFields = entities.reduce((a,e) => a + (e.fields?.length||0), 0);
+
+  const methodClass = m => ({ GET:'GET', POST:'POST', PUT:'PUT', DELETE:'DELETE' })[m] || 'GET';
+
+  const entitiesHtml = entities.map(e => `
+    <div class="entity-block">
+      <div class="ent-name">📋 ${e.name} <span class="ent-badge">${e.type}</span></div>
+      <div class="fields-wrap">
+        ${(e.fields||[]).map(f => `<span class="ftag${f.required?' req':''}">${f.name} <span style="opacity:.5;font-size:.6rem">${f.type}</span></span>`).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  const apisHtml = generated_apis.map(a => `
+    <div class="api-row">
+      <span class="meth ${methodClass(a.method)}">${a.method}</span>
+      <span class="api-ep">${a.endpoint}</span>
+      <span class="api-d">${a.description || ''}</span>
+    </div>
+  `).join('');
+
+  const lang = analysis?.execution_requirements?.language || 'python';
+  const deps = (analysis?.execution_requirements?.dependencies || []);
+
+  document.getElementById('stepAnalysis').innerHTML = `
+    <div class="fade-up">
+      <div class="analysis-header">
+        <div>
+          <p class="section-label">Analysis Complete</p>
+          <h2 class="big-title">Your Automation Plan</h2>
+        </div>
+        <div class="confidence-badge"><span>●</span>${confidence}% Confidence</div>
+      </div>
+
+      <div class="summary-box">
+        <strong>AI Summary: </strong>${analysis?.summary || 'Automation plan generated successfully.'}
+      </div>
+
+      <div class="stat-row">
+        <div class="stat"><div class="stat-val">${tables.length}</div><div class="stat-lbl">DB Tables</div></div>
+        <div class="stat"><div class="stat-val">${generated_apis.length}</div><div class="stat-lbl">API Endpoints</div></div>
+        <div class="stat"><div class="stat-val">${totalFields}</div><div class="stat-lbl">Total Fields</div></div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <p class="section-label">Detected Entities</p>
+          <h3 class="card-title" style="font-size:.92rem;margin-bottom:.9rem">Database Schema</h3>
+          ${entitiesHtml || '<p style="color:var(--text3);font-size:.8rem">No entities detected.</p>'}
+        </div>
+        <div class="card">
+          <p class="section-label">Generated Endpoints</p>
+          <h3 class="card-title" style="font-size:.92rem;margin-bottom:.9rem">REST APIs</h3>
+          ${apisHtml || '<p style="color:var(--text3);font-size:.8rem">No APIs generated.</p>'}
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:1.25rem">
+        <div class="meta-row">
+          <div class="meta-item">
+            <p class="section-label">Automation Type</p>
+            <p class="meta-val" style="color:var(--accent4)">${(analysis?.automation_type||'api_generation').replace(/_/g,' ').toUpperCase()}</p>
+          </div>
+          <div class="meta-item">
+            <p class="section-label">Language</p>
+            <p class="meta-val" style="color:var(--accent3)">${lang.toUpperCase()}</p>
+          </div>
+          <div class="meta-item">
+            <p class="section-label">Est. Setup Time</p>
+            <p class="meta-val">${data.estimated_setup_time}</p>
+          </div>
+          ${deps.length ? `<div class="meta-item"><p class="section-label">Dependencies</p><div class="chips-row" style="margin-top:.2rem">${deps.map(d=>`<span class="chip">${d}</span>`).join('')}</div></div>` : ''}
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn btn-secondary" onclick="setStep('input')">← Back</button>
+        <button class="btn btn-primary btn-green" id="generateBtn" onclick="generate()">
+          ⚡ Generate & Deploy All
+        </button>
+        <p style="font-size:.72rem;color:var(--text3)">Creates tables, APIs, and all code</p>
+      </div>
+    </div>
+  `;
+}
+
+// ==================== GENERATE ====================
+async function generate() {
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner spinner-dark"></span>Generating...';
+  hideError();
+
+  try {
+    const res = await fetch(API + `/automation/generate?automation_id=${state.automationId}`, {
+      method: 'POST'
+    });
+    if (!res.ok) {
+      const e = await res.json();
+      throw new Error(e.detail || 'Generation failed');
+    }
+    const data = await res.json();
+    state.generatedData = data;
+    renderGenerated(data);
+    setStep('generated');
+  } catch(e) {
+    showError(e.message);
+    btn.disabled = false;
+    btn.innerHTML = '⚡ Generate & Deploy All';
+  }
+}
+
+// ==================== RENDER GENERATED ====================
+function renderGenerated(data) {
+  const code = data.generated_code || {};
+  const impl = data.implementation || {};
+  const apis = state.analysisData?.generated_apis || [];
+
+  const steps = impl.setup_instructions || [
+    'Add ANTHROPIC_API_KEY to your .env file',
+    'Run: docker-compose up -d',
+    'Backend API docs: http://localhost:8000/docs',
+    'Frontend: http://localhost:3000',
+    'Test endpoints in the Execution Console below'
+  ];
+
+  const tabs = [
+    { key:'sql', label:'📄 SQL Schema', content: code.sql || impl.database_schema || '-- No SQL generated' },
+    { key:'python', label:'🐍 Python Models', content: code.python || '# No Python code generated' },
+    { key:'fastapi', label:'⚡ FastAPI Routes', content: code.fastapi || '# No FastAPI code generated' },
+  ];
+
+  window._genTabs = tabs;
+  window._activeTab = 'sql';
+
+  const apisHtml = apis.map(a => `
+    <div class="api-row">
+      <span class="meth ${a.method}">${a.method}</span>
+      <span class="api-ep">${a.endpoint}</span>
+      <span class="api-d">${a.description||''}</span>
+    </div>
+  `).join('');
+
+  document.getElementById('stepGenerated').innerHTML = `
+    <div class="fade-up">
+      <div class="gen-hero">
+        <span class="success-emoji">🎉</span>
+        <h2 class="gen-title">Automation Generated!</h2>
+        <p class="gen-sub">${data.tables_created||0} tables created &nbsp;·&nbsp; ${data.apis_ready||apis.length} APIs ready &nbsp;·&nbsp; All code generated</p>
+      </div>
+
+      <div class="metrics">
+        <div class="met"><div class="met-icon">🗄️</div><div class="met-val">${data.tables_created??'—'}</div><div class="met-lbl">Tables Created</div></div>
+        <div class="met"><div class="met-icon">📡</div><div class="met-val">${data.apis_ready??apis.length}</div><div class="met-lbl">APIs Ready</div></div>
+        <div class="met"><div class="met-icon">📦</div><div class="met-val">${tabs.length}</div><div class="met-lbl">Code Files</div></div>
+      </div>
+
+      <div class="card" style="margin-bottom:1.25rem">
+        <p class="section-label">Generated Code</p>
+        <h3 class="card-title" style="font-size:.92rem;margin-bottom:.9rem">Review & Copy</h3>
+        <div class="tab-bar" id="tabBar">
+          ${tabs.map(t => `<button class="tab${t.key==='sql'?' active':''}" onclick="switchTab('${t.key}')" id="tab-${t.key}">${t.label}</button>`).join('')}
+          <button class="tab tab-copy" onclick="copyActiveTab()" title="Copy to clipboard">📋 Copy</button>
+        </div>
+        <div class="code-view" id="codeView">${escHtml(tabs[0].content)}</div>
+      </div>
+
+      <div class="card" style="margin-bottom:1.25rem">
+        <p class="section-label">Deployment</p>
+        <h3 class="card-title" style="font-size:.92rem;margin-bottom:.9rem">Next Steps</h3>
+        <div class="setup-steps">
+          ${steps.map((s,i)=>`<div class="setup-step"><div class="s-circle">${i+1}</div><span>${s}</span></div>`).join('')}
+        </div>
+        ${impl.notes ? `<div class="note-box"><strong>Note: </strong>${impl.notes}</div>` : ''}
+      </div>
+
+      ${apis.length ? `<div class="card" style="margin-bottom:1.25rem">
+        <p class="section-label">API Reference</p>
+        <h3 class="card-title" style="font-size:.92rem;margin-bottom:.9rem">Ready Endpoints</h3>
+        ${apisHtml}
+      </div>` : ''}
+
+      <div class="action-row">
+        <button class="btn btn-secondary" onclick="resetApp()">↺ New Project</button>
+        <button class="btn btn-primary" onclick="setStep('execution')">▶ Open Execution Console →</button>
+      </div>
+    </div>
+  `;
+}
+
+function escHtml(str) {
+  return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function switchTab(key) {
+  window._activeTab = key;
+  document.querySelectorAll('.tab:not(.tab-copy)').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + key)?.classList.add('active');
+  const t = (window._genTabs||[]).find(t=>t.key===key);
+  document.getElementById('codeView').textContent = t?.content || '';
+}
+function copyActiveTab() {
+  const t = (window._genTabs||[]).find(t=>t.key===window._activeTab);
+  if (!t) return;
+  navigator.clipboard.writeText(t.content).then(()=>alert('✅ Copied to clipboard!')).catch(()=>{});
+}
+
+// ==================== EXECUTION ====================
+function renderExecution() {
+  document.getElementById('stepExecution').innerHTML = `
+    <div class="fade-up">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.75rem">
+        <div>
+          <p class="section-label">Step 4</p>
+          <h2 style="font-family:var(--font-head);font-size:1.45rem;font-weight:800">Execution Console</h2>
+        </div>
+        <div id="execStatusBadge"></div>
+      </div>
+
+      <div class="exec-grid">
+        <div class="card" style="padding:1.25rem">
+          <div class="exec-toolbar">
+            <p class="section-label" style="margin:0">Code Editor</p>
+            <select id="execLang" class="lang-sel" onchange="setExecExample()">
+              <option value="python">Python</option>
+              <option value="javascript">JavaScript</option>
+              <option value="sql">SQL</option>
+              <option value="bash">Bash</option>
+            </select>
+          </div>
+          <textarea id="execCode" rows="16" class="code-ta" style="margin-bottom:.9rem;min-height:300px">${escHtml(CODE_EXAMPLES.python)}</textarea>
+          <div style="display:flex;gap:.65rem">
+            <button class="btn btn-primary" style="flex:1;justify-content:center" id="runBtn" onclick="runCode()">▶ Run Code</button>
+            <button class="btn btn-secondary" onclick="clearExec()">Clear</button>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:1rem">
+          <div class="card" style="flex:1;padding:1.25rem">
+            <p class="section-label" style="margin-bottom:.6rem">Output</p>
+            <div class="output wait" id="execOutput">> Waiting for execution...\n\nPress "Run Code" to execute your code in the secure sandbox.</div>
+          </div>
+          <div class="card" style="padding:1.25rem">
+            <p class="section-label" style="margin-bottom:.6rem">Execution History</p>
+            <div id="execHistory"><p style="font-size:.75rem;color:var(--text3)">No executions yet</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1.25rem;padding:1.25rem">
+        <p class="section-label" style="margin-bottom:.65rem">Quick Snippets</p>
+        <div class="snip-row">
+          <button class="snip-btn" onclick="loadSnippet('python')">🐍 python</button>
+          <button class="snip-btn" onclick="loadSnippet('javascript')">🟨 javascript</button>
+          <button class="snip-btn" onclick="loadSnippet('sql')">🗄️ sql</button>
+          <button class="snip-btn" onclick="loadSnippet('bash')">🖥️ bash</button>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn btn-secondary" onclick="setStep('generated')">← Back to Results</button>
+        <button class="btn btn-secondary" onclick="resetApp()">↺ New Project</button>
+        <a href="http://localhost:8000/docs" target="_blank" class="btn btn-primary" style="text-decoration:none">📄 API Docs ↗</a>
+      </div>
+    </div>
+  `;
+}
+
+function setExecExample() {
+  const lang = document.getElementById('execLang').value;
+  document.getElementById('execCode').value = CODE_EXAMPLES[lang] || '';
+  clearExecOutput();
+}
+function loadSnippet(lang) {
+  document.getElementById('execLang').value = lang;
+  document.getElementById('execCode').value = CODE_EXAMPLES[lang] || '';
+  clearExecOutput();
+}
+function clearExec() {
+  document.getElementById('execCode').value = '';
+  clearExecOutput();
+}
+function clearExecOutput() {
+  const o = document.getElementById('execOutput');
+  if (o) { o.textContent = '> Waiting for execution...'; o.className = 'output wait'; }
+  document.getElementById('execStatusBadge').innerHTML = '';
+}
+
+async function runCode() {
+  const code = document.getElementById('execCode').value.trim();
+  const lang = document.getElementById('execLang').value;
+  if (!code) return;
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Executing...';
+  const statusEl = document.getElementById('execStatusBadge');
+  statusEl.innerHTML = '<span class="exec-status-badge run">⏳ RUNNING</span>';
+
+  const out = document.getElementById('execOutput');
+  out.textContent = '> Executing...';
+  out.className = 'output';
+
+  const start = Date.now();
+  try {
+    const res = await fetch(API + '/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, language: lang, timeout: 30 })
+    });
+    const data = await res.json();
+    const ms = Date.now() - start;
+    const isOk = data.status === 'success';
+    out.textContent = data.output || data.error || 'No output';
+    out.className = 'output ' + (isOk ? 'ok' : 'err');
+    statusEl.innerHTML = `<span class="exec-status-badge ${isOk?'ok':'err'}">${isOk?'✓ SUCCESS':'✗ ERROR'} (${ms}ms)</span>`;
+
+    // History
+    state.execHistory.unshift({ lang, status: data.status, time: new Date().toLocaleTimeString(), ms });
+    if (state.execHistory.length > 8) state.execHistory.pop();
+    renderHistory();
+  } catch(e) {
+    out.textContent = 'Network error: ' + e.message + '\n\nMake sure the backend is running:\n  cd backend && uvicorn app.main:app --reload';
+    out.className = 'output err';
+    statusEl.innerHTML = '<span class="exec-status-badge err">✗ NETWORK ERROR</span>';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '▶ Run Code';
+  }
+}
+
+function renderHistory() {
+  const el = document.getElementById('execHistory');
+  if (!el) return;
+  if (state.execHistory.length === 0) {
+    el.innerHTML = '<p style="font-size:.75rem;color:var(--text3)">No executions yet</p>';
+    return;
+  }
+  el.innerHTML = state.execHistory.map(h => `
+    <div class="hist-item">
+      <span class="${h.status==='success'?'hist-ok':'hist-err'}">${h.status==='success'?'✓':'✗'}</span>
+      <span style="color:var(--text2);font-family:var(--font-mono)">${h.lang}</span>
+      <span>${h.time}</span>
+      <span style="margin-left:auto">${h.ms}ms</span>
+    </div>
+  `).join('');
+}
+
+// Override setStep to render execution lazily
+const _origSetStep = setStep;
+window.setStep = function(s) {
+  if (s === 'execution') renderExecution();
+  _origSetStep(s);
+};
+</script>
+</body>
+</html>
