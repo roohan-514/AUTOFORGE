@@ -27,3 +27,7 @@ Describe what you want to automate in plain English →
 Built with FastAPI + React + PostgreSQL + Docker
 
 #OpenSource #AI #Automation #Python #FastAPI #Claude #BuildInPublic
+
+<!-- update -->
+
+<!-- temp -->
